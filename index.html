@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка плагиата</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Сервис проверки текста на плагиат</h1>
+        </header>
+        
+        <main>
+            <!-- Оригинальные тексты -->
+            <section class="text-section">
+                <h2>Исходные тексты</h2>
+                <div class="inputs-container">
+                    <div class="input-group">
+                        <h3>Текст 1</h3>
+                        <textarea id="text1" placeholder="Вставьте первый текст сюда..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <h3>Текст 2</h3>
+                        <textarea id="text2" placeholder="Вставьте второй текст сюда..."></textarea>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="clean-button" type="button">Очистить тексты</button>
+                    <button id="check-button" type="button">Проверить на плагиат</button>
+                </div>
+            </section>
+            
+            <!-- Очищенные тексты -->
+            <section class="text-section" id="cleaned-section">
+                <h2>Очищенные тексты</h2>
+                <div class="cleaned-container">
+                    <div class="cleaned-column">
+                        <h3>Очищенный текст 1</h3>
+                        <div id="cleaned-text1" class="text-display">
+                            <p class="placeholder-text">Здесь появится очищенный текст...</p>
+                        </div>
+                    </div>
+                    <div class="cleaned-column">
+                        <h3>Очищенный текст 2</h3>
+                        <div id="cleaned-text2" class="text-display">
+                            <p class="placeholder-text">Здесь появится очищенный текст...</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="info-text">
+                    <strong>Примечание:</strong> Очищенные тексты не содержат союзов (и, но, а, ж, же, то) 
+                    и предлогов (в, к, на, с, со, из, о, от), а также лишних символов.
+                </p>
+            </section>
+            
+            <div id="result-container" class="hidden">
+                <!-- Здесь будут результаты -->
+            </div>
+        </main>
+        
+        <footer>
+            <p>© 2025 Сервис проверки плагиата</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
