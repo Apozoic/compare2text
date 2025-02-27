@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const cleanButton = document.getElementById('clean-button');
     const checkButton = document.getElementById('check-button');
     const cleanedSection = document.getElementById('cleaned-section');
+    const resultContainer = document.getElementById('result-container');
+    
+    // Создаем экземпляр проверки плагиата
+    const plagiarismChecker = new PlagiarismChecker(7, 4); // окно 7, минимум 4 совпадения
     
     // Список слов для удаления (союзы и предлоги)
     const wordsToRemove = [
@@ -58,39 +62,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Функция для очистки текста и разделения по предложениям
-function cleanText(text) {
-    if (!text) return [];
-    
-    // Заменяем дефисы на пробелы, чтобы слова не сливались
-    let textWithSpaces = text.replace(/[-–—]/g, ' ');
-    
-    // Затем сохраняем точки и пробелы, удаляем другие спец. символы
-    let cleaned = textWithSpaces.replace(/[^\wа-яА-ЯёЁ\s.]/g, '');
-    
-    // Разбиваем текст на предложения (по точкам)
-    // Используем позитивный просмотр вперед (?=\.), чтобы сохранить точки в результате
-    let sentences = cleaned.split(/(?<=\.)\s*/);
-    
-    // Обрабатываем каждое предложение
-    return sentences.map(sentence => {
-        // Если предложение пустое, пропускаем его
-        if (!sentence.trim()) return null;
+    function cleanText(text) {
+        if (!text) return [];
         
-        // Разбиваем предложение на слова
-        let words = sentence.split(/\s+/);
+        // Заменяем дефисы на пробелы, чтобы слова не сливались
+        let textWithSpaces = text.replace(/[-–—]/g, ' ');
         
-        // Фильтруем слова, удаляя союзы и предлоги, и применяем стемминг
-        words = words
-            .filter(word => {
-                const wordLower = word.toLowerCase().replace(/[.]/g, '');
-                return wordLower && !wordsToRemove.includes(wordLower);
-            })
-            .map(word => simpleStemming(word)); // Применяем стемминг к каждому слову
+        // Затем сохраняем точки и пробелы, удаляем другие спец. символы
+        let cleaned = textWithSpaces.replace(/[^\wа-яА-ЯёЁ\s.]/g, '');
         
-        // Собираем предложение обратно
-        return words.join(' ');
-    }).filter(sentence => sentence); // Удаляем пустые предложения
-}
+        // Разбиваем текст на предложения (по точкам)
+        // Используем позитивный просмотр вперед (?=\.), чтобы сохранить точки в результате
+        let sentences = cleaned.split(/(?<=\.)\s*/);
+        
+        // Обрабатываем каждое предложение
+        return sentences.map(sentence => {
+            // Если предложение пустое, пропускаем его
+            if (!sentence.trim()) return null;
+            
+            // Разбиваем предложение на слова
+            let words = sentence.split(/\s+/);
+            
+            // Фильтруем слова, удаляя союзы и предлоги, и применяем стемминг
+            words = words
+                .filter(word => {
+                    const wordLower = word.toLowerCase().replace(/[.]/g, '');
+                    return wordLower && !wordsToRemove.includes(wordLower);
+                })
+                .map(word => simpleStemming(word)); // Применяем стемминг к каждому слову
+            
+            // Собираем предложение обратно
+            return words.join(' ');
+        }).filter(sentence => sentence); // Удаляем пустые предложения
+    }
     
     // Функция для отображения очищенного текста
     function displayCleanedText(container, sentences) {
@@ -131,10 +135,67 @@ function cleanText(text) {
         
         // Показываем секцию с очищенными текстами
         cleanedSection.style.display = 'block';
+        
+        // Скрываем результаты проверки, если они были отображены ранее
+        resultContainer.classList.add('hidden');
     });
     
-    // Пока заглушка для кнопки проверки
+    // Обработчик кнопки проверки на плагиат
     checkButton.addEventListener('click', function() {
-        alert('Функция проверки на плагиат будет добавлена позже');
+        // Проверяем, есть ли очищенные тексты
+        if (cleanedSection.style.display === 'none') {
+            alert('Сначала очистите тексты, нажав на кнопку "Очистить тексты"');
+            return;
+        }
+        
+        // Получаем очищенные тексты из DOM
+        const cleanedTextContent1 = Array.from(cleanedText1.querySelectorAll('.sentence'))
+            .map(span => span.textContent)
+            .join('\n');
+        
+        const cleanedTextContent2 = Array.from(cleanedText2.querySelectorAll('.sentence'))
+            .map(span => span.textContent)
+            .join('\n');
+        
+        // Проверяем на плагиат
+        const results = plagiarismChecker.checkPlagiarism(
+            cleanedTextContent1, 
+            cleanedTextContent2
+        );
+        
+        // Отображаем результаты
+        displayResults(results);
     });
+    
+    // Функция для отображения результатов проверки
+    function displayResults(results) {
+        // Обновляем содержимое очищенных текстов с подсветкой
+        cleanedText1.innerHTML = results.markedText1;
+        cleanedText2.innerHTML = results.markedText2;
+        
+        // Отображаем статистику
+        resultContainer.innerHTML = `
+            <h3>Результаты проверки на плагиат</h3>
+            <div class="result-stats">
+                <div class="stat-item">
+                    <h4>Текст 1</h4>
+                    <p>Неуникальность: <strong>${results.percentNonUnique1}%</strong></p>
+                    <p>Неуникальных слов: ${results.nonUniqueWords1} из ${results.totalWords1}</p>
+                </div>
+                <div class="stat-item">
+                    <h4>Текст 2</h4>
+                    <p>Неуникальность: <strong>${results.percentNonUnique2}%</strong></p>
+                    <p>Неуникальных слов: ${results.nonUniqueWords2} из ${results.totalWords2}</p>
+                </div>
+            </div>
+            <p class="info-text">
+                <strong>Примечание:</strong> Неуникальные фрагменты выделены оранжевым цветом.
+                Анализ выполнен с использованием алгоритма "размытого шингла" с окном размером 7 слов
+                и минимальным совпадением 4 слова.
+            </p>
+        `;
+        
+        // Показываем блок с результатами
+        resultContainer.classList.remove('hidden');
+    }
 });
