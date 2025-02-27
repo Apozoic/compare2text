@@ -19,35 +19,78 @@ document.addEventListener('DOMContentLoaded', function() {
     // Скрываем секцию с очищенными текстами изначально
     cleanedSection.style.display = 'none';
     
+    /**
+     * Выполняет упрощенный стемминг русскоязычного слова.
+     * Удаляет окончания в зависимости от длины слова.
+     * @param {string} word - Исходное слово
+     * @return {string} - Слово после обработки
+     */
+    function simpleStemming(word) {
+        // Проверяем, содержит ли слово только кириллические символы
+        // (возможно с точкой в конце)
+        if (!/^[а-яА-ЯёЁ]+\.?$/.test(word)) {
+            return word; // Не обрабатываем латиницу и другие символы
+        }
+        
+        // Удаляем точку, если она есть в конце слова
+        let hasDot = word.endsWith('.');
+        let cleanWord = hasDot ? word.slice(0, -1) : word;
+        
+        // Применяем правила в зависимости от длины слова
+        let stemmedWord;
+        
+        if (cleanWord.length <= 4) {
+            // Для слов до 4 символов включительно оставляем как есть
+            stemmedWord = cleanWord;
+        } else if (cleanWord.length === 5) {
+            // Для слов из 5 символов удаляем последнюю букву
+            stemmedWord = cleanWord.slice(0, -1);
+        } else if (cleanWord.length === 6) {
+            // Для слов из 6 символов удаляем две последние буквы
+            stemmedWord = cleanWord.slice(0, -2);
+        } else {
+            // Для слов из 7 и более символов удаляем три последние буквы
+            stemmedWord = cleanWord.slice(0, -3);
+        }
+        
+        // Возвращаем слово, добавляя точку, если она была
+        return hasDot ? stemmedWord + '.' : stemmedWord;
+    }
+    
     // Функция для очистки текста и разделения по предложениям
-    function cleanText(text) {
-        if (!text) return [];
+function cleanText(text) {
+    if (!text) return [];
+    
+    // Заменяем дефисы на пробелы, чтобы слова не сливались
+    let textWithSpaces = text.replace(/[-–—]/g, ' ');
+    
+    // Затем сохраняем точки и пробелы, удаляем другие спец. символы
+    let cleaned = textWithSpaces.replace(/[^\wа-яА-ЯёЁ\s.]/g, '');
+    
+    // Разбиваем текст на предложения (по точкам)
+    // Используем позитивный просмотр вперед (?=\.), чтобы сохранить точки в результате
+    let sentences = cleaned.split(/(?<=\.)\s*/);
+    
+    // Обрабатываем каждое предложение
+    return sentences.map(sentence => {
+        // Если предложение пустое, пропускаем его
+        if (!sentence.trim()) return null;
         
-        // Сначала сохраняем точки и пробелы, удаляем другие спец. символы
-        let cleaned = text.replace(/[^\wа-яА-ЯёЁ\s.]/g, '');
+        // Разбиваем предложение на слова
+        let words = sentence.split(/\s+/);
         
-        // Разбиваем текст на предложения (по точкам)
-        // Используем позитивный просмотр вперед (?=\.), чтобы сохранить точки в результате
-        let sentences = cleaned.split(/(?<=\.)\s*/);
-        
-        // Обрабатываем каждое предложение
-        return sentences.map(sentence => {
-            // Если предложение пустое, пропускаем его
-            if (!sentence.trim()) return null;
-            
-            // Разбиваем предложение на слова
-            let words = sentence.split(/\s+/);
-            
-            // Фильтруем слова, удаляя союзы и предлоги
-            words = words.filter(word => {
+        // Фильтруем слова, удаляя союзы и предлоги, и применяем стемминг
+        words = words
+            .filter(word => {
                 const wordLower = word.toLowerCase().replace(/[.]/g, '');
                 return wordLower && !wordsToRemove.includes(wordLower);
-            });
-            
-            // Собираем предложение обратно
-            return words.join(' ');
-        }).filter(sentence => sentence); // Удаляем пустые предложения
-    }
+            })
+            .map(word => simpleStemming(word)); // Применяем стемминг к каждому слову
+        
+        // Собираем предложение обратно
+        return words.join(' ');
+    }).filter(sentence => sentence); // Удаляем пустые предложения
+}
     
     // Функция для отображения очищенного текста
     function displayCleanedText(container, sentences) {
